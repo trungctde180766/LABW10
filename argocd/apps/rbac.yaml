@@ -1,16 +1,17 @@
-# ArgoCD App: Deploy API Rollout + Service + ServiceMonitor
+# ArgoCD App: Deploy RBAC roles + bindings
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: api
+  name: rbac
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "-1"
+    # Lab 1.1: RBAC — alice/developer, bob/sre, carol/viewer
 spec:
   project: default
   source:
     repoURL: https://github.com/trungctde180766/LABW10.git
-    path: app-api
+    path: rbac
     targetRevision: main
   destination:
     server: https://kubernetes.default.svc

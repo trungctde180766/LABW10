@@ -1,0 +1,68 @@
+# Lab 1.3 - Custom Policy: Chỉ cho phép image từ ghcr.io/<owner>/
+# Chặn mọi registry khác (dockerhub, quay.io, v.v.)
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sallowedregistry
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sAllowedRegistry
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            allowedPrefixes:
+              type: array
+              items:
+                type: string
+  targets:
+  - target: admission.k8s.gatekeeper.sh
+    rego: |
+      package k8sallowedregistry
+
+      violation[{"msg": msg}] {
+        container := input_containers[_]
+        not allowed_registry(container.image)
+        msg := sprintf("Container '%v' dùng image '%v' từ registry không được phép. Chỉ cho phép: %v", [
+          container.name,
+          container.image,
+          input.parameters.allowedPrefixes,
+        ])
+      }
+
+      allowed_registry(image) {
+        prefix := input.parameters.allowedPrefixes[_]
+        startswith(image, prefix)
+      }
+
+      input_containers[c] {
+        c := input.review.object.spec.containers[_]
+      }
+
+      input_containers[c] {
+        c := input.review.object.spec.template.spec.containers[_]
+      }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sAllowedRegistry
+metadata:
+  name: allowed-registry
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+    - apiGroups: ["apps", "argoproj.io"]
+      kinds: ["Deployment", "StatefulSet", "DaemonSet", "Rollout"]
+    namespaces:
+    - demo
+  parameters:
+    allowedPrefixes:
+    - "ghcr.io/Vuong-Bach/"
+    - "ghcr.io/vuong-bach/"
