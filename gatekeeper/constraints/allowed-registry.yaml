@@ -64,5 +64,4 @@ spec:
     - demo
   parameters:
     allowedPrefixes:
-    - "ghcr.io/Vuong-Bach/"
-    - "ghcr.io/vuong-bach/"
+    - "ghcr.io/trungctde180766/"
